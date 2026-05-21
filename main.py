@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import requests
 import threading
 import time
@@ -10,7 +11,7 @@ init(autoreset=True)
 def banner():
     print(f"""{Fore.CYAN}
     ╔══════════════════════════════════════╗
-    ║     GUNS.LOL VIEVS BOT v1.0         ║
+    ║     GUNS.LOL VIEVS BOT    v2.0      ║
     ║     MULTI-PROXY VIEVS BOT           ║
     ╚══════════════════════════════════════╝
     {Style.RESET_ALL}""")
@@ -37,11 +38,9 @@ def click_screen(nick, proxy):
     
     try:
         proxies = {"http": f"http://{proxy}", "https": f"http://{proxy}"}
-    
         response = requests.get(url, proxies=proxies, headers=headers, timeout=15)
         
         if response.status_code == 200:
-            
             click_data = {
                 'x': random.randint(0, 1920),
                 'y': random.randint(0, 1080),
@@ -86,34 +85,41 @@ def main():
     
     try:
         with open('proxy.txt', 'r') as f:
-            proxies = [line.strip() for line in f if line.strip()]
+            all_proxies = [line.strip() for line in f if line.strip()]
     except FileNotFoundError:
         print(f"{Fore.RED}Nie znaleziono pliku proxy.txt!{Style.RESET_ALL}")
         sys.exit(1)
     
-    if not proxies:
+    if not all_proxies:
         print(f"{Fore.RED}Plik proxy.txt jest pusty!{Style.RESET_ALL}")
         sys.exit(1)
     
-    print(f"\n{Fore.CYAN}Znaleziono {len(proxies)} proxy{Style.RESET_ALL}")
-    threads_count = int(input(f"{Fore.YELLOW}Ile wątków (max 50): {Style.RESET_ALL}") or "10")
-    threads_count = min(threads_count, 50)
+    threads_count = int(input(f"{Fore.YELLOW}Ile wątków (szukam tyle działających proxy): {Style.RESET_ALL}") or "5")
+    threads_count = min(threads_count, 100)
     
-    print(f"\n{Fore.YELLOW}Sprawdzanie proxy...{Style.RESET_ALL}")
+    print(f"\n{Fore.YELLOW}Szukam {threads_count} działających proxy...{Style.RESET_ALL}")
+    
     working_proxies = []
-    for i, proxy in enumerate(proxies):
+    for proxy in all_proxies:
+        if len(working_proxies) >= threads_count:
+            break
+            
+        print(f"{Fore.CYAN}Sprawdzam: {proxy}...{Style.RESET_ALL}")
         if check_proxy(proxy):
             working_proxies.append(proxy)
-            print(f"{Fore.GREEN}✓ Proxy działa: {proxy}{Style.RESET_ALL}")
+            print(f"{Fore.GREEN}✓ Działa! Znaleziono: {len(working_proxies)}/{threads_count}{Style.RESET_ALL}")
         else:
-            print(f"{Fore.RED}✗ Proxy nie działa: {proxy}{Style.RESET_ALL}")
-        time.sleep(0.5)
+            print(f"{Fore.RED}✗ Nie działa{Style.RESET_ALL}")
+        time.sleep(0.3)
     
-    if not working_proxies:
-        print(f"{Fore.RED}Brak działających proxy!{Style.RESET_ALL}")
-        sys.exit(1)
+    if len(working_proxies) < threads_count:
+        print(f"\n{Fore.RED}Znaleziono tylko {len(working_proxies)} działających proxy z {threads_count} potrzebnych!{Style.RESET_ALL}")
+        kontynuuj = input(f"{Fore.YELLOW}Czy kontynuować z {len(working_proxies)} proxy? (t/n): {Style.RESET_ALL}")
+        if kontynuuj.lower() != 't':
+            sys.exit(1)
+    else:
+        print(f"\n{Fore.GREEN}Znaleziono {len(working_proxies)} działających proxy!{Style.RESET_ALL}")
     
-    print(f"\n{Fore.GREEN}Działających proxy: {len(working_proxies)}{Style.RESET_ALL}")
     input(f"{Fore.YELLOW}Naciśnij Enter aby rozpocząć atak...{Style.RESET_ALL}")
     
     stats = {
@@ -128,18 +134,15 @@ def main():
         t = threading.Thread(target=worker, args=(nick, proxy, stats))
         t.start()
         threads.append(t)
-        time.sleep(0.1)  
-        
-        if len(threads) >= threads_count:
-            break
+        time.sleep(0.1)
     
     for t in threads:
         t.join()
     
     print(f"\n{Fore.CYAN}═══════════════════════════════════{Style.RESET_ALL}")
-    print(f"{Fore.GREEN} Udanych kliknięć: {stats['success']}{Style.RESET_ALL}")
-    print(f"{Fore.RED} Nieudanych: {stats['failed']}{Style.RESET_ALL}")
-    print(f"{Fore.YELLOW} Razem: {stats['total']}{Style.RESET_ALL}")
+    print(f"{Fore.GREEN}✓ Udanych kliknięć: {stats['success']}{Style.RESET_ALL}")
+    print(f"{Fore.RED}✗ Nieudanych: {stats['failed']}{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}📊 Razem: {stats['total']}{Style.RESET_ALL}")
     print(f"{Fore.CYAN}═══════════════════════════════════{Style.RESET_ALL}")
 
 if __name__ == "__main__":
