@@ -1,16 +1,16 @@
 import requests
 import json
 import time
-import getpass
 
 # ========== KONFIGURACJA ==========
-CAPMONSTER_API_KEY = "bf1316d12774482f0402018ae62af244"  # Wpisz swój klucz z https://capmonster.cloud
+DISCORD_TOKEN = input("🔑 Podaj TOKEN konta Discord: ").strip()
+DISCORD_PASSWORD = "gOrBFyXCq4TqRHI"  # Twoje hasło na stałe
+CAPMONSTER_API_KEY = "bf1316d12774482f0402018ae62af244"  # Wpisz swój klucz z capmonster.cloud
 
 # ========== FUNKCJA ROZWIĄZUJĄCA CAPTCHA ==========
 def solve_captcha(site_key, page_url):
     """Wysyła CAPTCHA do CapMonster Cloud i zwraca token rozwiązania"""
     
-    # Tworzenie zadania
     create_payload = {
         "clientKey": CAPMONSTER_API_KEY,
         "task": {
@@ -33,7 +33,6 @@ def solve_captcha(site_key, page_url):
     
     print(f"🧩 Zadanie CAPTCHA utworzone (ID: {task_id})")
     
-    # Pobieranie wyniku (co 2 sekundy)
     while True:
         time.sleep(2)
         result_payload = {
@@ -60,26 +59,21 @@ def change_discord_nickname(token, password, new_nickname):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
     
-    # Przygotowanie danych (z hasłem)
     payload = {
         "username": new_nickname,
-        "password": password  # Wymagane przy zmianie nazwy!
+        "password": password  # Hasło na stałe w kodzie
     }
     
-    # Próba nr 1: bez CAPTCHA
     print("\n📡 Wysyłanie żądania zmiany nazwy...")
     response = requests.patch("https://discord.com/api/v9/users/@me", headers=headers, json=payload)
     
-    # Sukces – brak CAPTCHA
     if response.status_code == 200:
         print(f"✨ Sukces! Nazwa zmieniona na: {new_nickname}")
         return True
     
-    # Jeśli wymagana CAPTCHA
     if response.status_code == 400 and "captcha" in response.text.lower():
         print("🔒 Discord wymaga rozwiązania CAPTCHA!")
         
-        # Stały klucz reCAPTCHA Discorda
         SITE_KEY = "4c672d35-0701-42b2-88c3-78380b0db560"
         PAGE_URL = "https://discord.com/login"
         
@@ -88,31 +82,22 @@ def change_discord_nickname(token, password, new_nickname):
             print("❌ Nie udało się rozwiązać CAPTCHA")
             return False
         
-        # Próba nr 2: z CAPTCHA
         payload["captcha_key"] = captcha_token
         response = requests.patch("https://discord.com/api/v9/users/@me", headers=headers, json=payload)
         
         if response.status_code == 200:
-            print(f"✨ Sukces! Nazwa zmieniona na: {new_nickname} (po rozwiązaniu CAPTCHA)")
+            print(f"✨ Sukces! Nazwa zmieniona na: {new_nickname} (po CAPTCHA)")
             return True
         else:
             print(f"❌ Błąd po CAPTCHA: {response.status_code}")
             print(f"Odpowiedź: {response.text}")
             return False
-    
-    # Inny błąd
     else:
         print(f"❌ Błąd: {response.status_code}")
         print(f"Odpowiedź: {response.text}")
         
-        # Szczegółowa diagnostyka
-        if response.status_code == 400:
-            try:
-                error_data = response.json()
-                if "password" in str(error_data):
-                    print("⚠️ Najprawdopodobniej PODAŁEŚ ZŁE HASŁO!")
-            except:
-                pass
+        if response.status_code == 400 and "password" in response.text.lower():
+            print("⚠️ Hasło jest niepoprawne!")
         return False
 
 # ========== GŁÓWNA CZĘŚĆ PROGRAMU ==========
@@ -121,38 +106,26 @@ if __name__ == "__main__":
     print("   Discord Nickname Changer + CapMonster")
     print("=" * 50)
     
-    # Pobieranie danych od użytkownika
-    TOKEN = input("\n🔑 Podaj TOKEN konta Discord: ").strip()
-    PASSWORD = getpass.getpass("🔒 Podaj HASŁO do konta Discord: ")
     NEW_NAME = input("✏️ Podaj NOWĄ NAZWĘ użytkownika: ").strip()
     
-    if not TOKEN or not PASSWORD or not NEW_NAME:
-        print("❌ Wszystkie pola są wymagane!")
+    if not DISCORD_TOKEN or not NEW_NAME:
+        print("❌ Token i nowa nazwa są wymagane!")
         exit(1)
     
-    # Wyświetlenie podsumowania
-    print("\n" + "-" * 50)
-    print(f"📝 Nowa nazwa: {NEW_NAME}")
-    print(f"🤖 CapMonster: {'SKONFIGUROWANY' if CAPMONSTER_API_KEY != 'TWOJ_KLUCZ_API_Z_CAPMONSTER' else 'BRAK KLUCZA!'}")
-    print("-" * 50)
-    
     if CAPMONSTER_API_KEY == "TWOJ_KLUCZ_API_Z_CAPMONSTER":
-        print("⚠️ UWAGA: Nie podałeś klucza CapMonster!")
+        print("\n⚠️ UWAGA: Nie podałeś klucza CapMonster!")
         print("   Jeśli Discord zażąda CAPTCHA – skrypt nie zadziała.")
-        print("   Zarejestruj się na https://capmonster.cloud i wklej klucz do kodu.\n")
         kontynuuj = input("Czy chcesz kontynuować bez CapMonster? (t/n): ")
         if kontynuuj.lower() != 't':
             exit(0)
     
-    # Zmiana nazwy
-    print("\n🔄 Rozpoczynam zmianę nazwy...")
-    success = change_discord_nickname(TOKEN, PASSWORD, NEW_NAME)
+    print(f"\n📝 Nowa nazwa: {NEW_NAME}")
+    print(f"🔒 Hasło: {DISCORD_PASSWORD[:3]}*** (ustawione w kodzie)")
+    print("-" * 50)
+    
+    success = change_discord_nickname(DISCORD_TOKEN, DISCORD_PASSWORD, NEW_NAME)
     
     if success:
         print("\n🎉 Wszystko gotowe!")
     else:
         print("\n💀 Zmiana nazwy nie powiodła się.")
-        print("Sprawdź:")
-        print("  - czy token i hasło są poprawne")
-        print("  - czy konto nie ma włączonego 2FA")
-        print("  - czy nie zmieniasz nazwy zbyt często (limit 2x/godz.)")
