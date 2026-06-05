@@ -1,0 +1,8 @@
+{
+  "name": "discord-epic-monitor",
+  "version": "1.0.0",
+  "dependencies": {
+    "discord.js-selfbot-v13": "^3.4.1",
+    "selenium-webdriver": "^4.27.0"
+  }
+}
