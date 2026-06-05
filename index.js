@@ -1,4 +1,3 @@
-// discord_epic_monitor.js
 const { Client, GatewayIntentBits } = require('discord.js-selfbot-v13');
 const { Builder, By, until } = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
